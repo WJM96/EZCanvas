@@ -1,0 +1,13 @@
+{
+  "name": "ezcanvas",
+  "version": "1.0.0",
+  "description": "A canvas-based drawing library",
+  "scripts": {
+    "build": "npx uglifyjs -c -o ./build/ezc-min.js -- ezc.js"
+  },
+  "author": "Wesley McClintock",
+  "license": "MIT",
+  "devDependencies": {
+    "uglify-es": "^3.3.9"
+  }
+}

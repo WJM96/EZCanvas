@@ -1,0 +1,29 @@
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>EZ Canvas Demo</title>
+	<script src="./build/ezc-min.js"></script>
+</head>
+<body>
+	<style>
+	#ezcanvas{
+		outline: 1px solid black;
+		margin: auto;
+		display: block;
+		width: 100%;
+		max-width: 640px;
+		height: auto;
+	}
+	</style>
+	<canvas id="ezcanvas" width="640" height="480"></canvas>
+	<script>
+		let ez = new EZCanvas();
+	</script>
+	<button onclick="ez.clear()"> clear </button>
+	<button onclick="ez.drawImage('http://www.retas.de/thomas/computer/programs/useless/piet/hw1-11.gif')">Draw Image</button>
+	<input type="number" value="5" onchange="ez.setBrushSize(this.value)">
+	<input type="color" value="black" onchange="ez.setBrushColor(this.value)">
+</body>
+</html>

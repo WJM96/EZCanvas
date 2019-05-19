@@ -13,7 +13,6 @@
 		margin: auto;
 		display: block;
 		width: 100%;
-		max-width: 640px;
 		height: auto;
 	}
 	</style>
@@ -23,6 +22,7 @@
 	</script>
 	<button onclick="ez.clear()"> clear </button>
 	<button onclick="ez.drawImage('http://www.retas.de/thomas/computer/programs/useless/piet/hw1-11.gif')">Draw Image</button>
+	<button onclick="ez.drawImage('http://www.retas.de/thomas/computer/programs/useless/piet/hw1-11.gif', true)">Draw Image (fill)</button>
 	<input type="number" value="5" onchange="ez.setBrushSize(this.value)">
 	<input type="color" value="black" onchange="ez.setBrushColor(this.value)">
 </body>

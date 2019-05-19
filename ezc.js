@@ -22,8 +22,7 @@ class EZCanvas {
 		// Default settings
 		this.settings = {
 			brush: {
-				ends: 'butt',
-				joins: 'round',
+				ends: 'round',
 				size: 5,
 				color: '#000000'
 			},
@@ -48,7 +47,7 @@ class EZCanvas {
 
 		// Set up the drawing cursor. Maybe use objects instead of arrays?
 		this.currentPos = [0, 0];
-		this.stabilizedPos = [0, 0];
+		this.lastPos = [0, 0];
 
 		// Bind event listeners
 		this.canvasElement.onpointermove = this.handlePointerMove.bind(this);
@@ -65,7 +64,6 @@ class EZCanvas {
 	applySettings() {
 		this.ctx.lineWidth = this.settings.brush.size;
 		this.ctx.lineCap = this.settings.brush.ends;
-		this.ctx.lineJoin = this.settings.brush.joins;
 		this.ctx.strokeStyle = this.settings.brush.color;
 
 		return this;
@@ -114,13 +112,26 @@ class EZCanvas {
 
 	/*
 	 * Draws an image to the canvas.
+	 *
+	 * If fill is true, the image will cover the entire canvas.
+	 * otherwise, it will be drawn at actual size.
 	 */
-	drawImage(url) {
+	drawImage(url, fill = false) {
 		// TODO: support image resize, positioning etc.
 
 		const img = document.createElement('IMG');
 		img.onload = () => {
-			this.ctx.drawImage(img, 0, 0, this.canvasElement.width, this.canvasElement.height);
+			let dest = [
+				0, 0, 
+				img.width, img.height
+			];
+			if (fill) {
+				dest = [
+					0, 0, 
+					this.canvasElement.width, this.canvasElement.height
+				];
+			}
+			this.ctx.drawImage(img, ...dest);
 		};
 		img.src = url;
 		// TODO: error handling
@@ -136,6 +147,9 @@ class EZCanvas {
 		const xZoom = this.canvasElement.width / this.canvasElement.clientWidth;
 		const yZoom = this.canvasElement.height /this.canvasElement.offsetHeight;
 		// Maybe this should be a struct instead of an array?
+		if (!this.settings.stabilizer.enabled) {
+			this.lastPos = this.currentPos;
+		}
 		this.currentPos = [
 			(event.clientX - offset.left) * xZoom,
 			(event.clientY - offset.top) * yZoom
@@ -156,9 +170,12 @@ class EZCanvas {
 	startLine() {
 		this.running = true;
 
-		this.stabilizedPos = this.currentPos;
+		this.lastPos = this.currentPos;
+		this.contextPos = this.currentPos;
 		this.ctx.moveTo(...this.currentPos);
-		this.ctx.beginPath();
+		// this.ctx.beginPath();
+
+		// this.ctx.globalAlpha = 0.5
 	}
 
 	/*
@@ -166,10 +183,12 @@ class EZCanvas {
 	 */
 	endLine() {
 		// make sure stabilized lines reach all the way to the end
-		if (this.running && this.settings.stabilizer.enabled) {
+		/*if (this.running && this.settings.stabilizer.enabled) {
+			this.ctx.beginPath();
+			this.ctx.moveTo(...this.lastPos);
 			this.ctx.lineTo(...this.currentPos);
 			this.ctx.stroke();
-		}
+		}*/
 
 		this.running = false;
 	}
@@ -178,33 +197,53 @@ class EZCanvas {
 	 * Draws a line segment
 	 */
 	draw() {
-		// Right now, this will draw the ENTIRE line each time a new segment is added. 
-		// This is slow, but also seems to produce smoother lines (?). To disable this,
-		// uncomment the two lines below. 
-		// 
-		// I think a better method is to use bezier curves on each segment in the future,
-		// or some other kind of smoothing.
+		this.ctx.beginPath();
+		this.ctx.moveTo(...this.lastPos);
 
-		// this.ctx.beginPath();
+		let dest = this.currentPos;
 
 		if (this.settings.stabilizer.enabled) {
-			//this.ctx.moveTo(...this.stabilizedPos);
-
-			// Difference between stabilized position and pointer position
+			// Difference between the last position and new position
 			const diff = [
-				this.currentPos[0] - this.stabilizedPos[0],
-				this.currentPos[1] - this.stabilizedPos[1]
+				this.currentPos[0] - this.lastPos[0],
+				this.currentPos[1] - this.lastPos[1]
 			];
 
-			// Move the stabilized cursor some percentage (stabilizer.delay) towards the final destination
-			this.stabilizedPos[0] += diff[0]  * this.settings.stabilizer.delay;
-			this.stabilizedPos[1] += diff[1]  * this.settings.stabilizer.delay;
+			// Move the destination point some percentage towards the final destination
+			dest = [
+				this.lastPos[0] + (diff[0]  * this.settings.stabilizer.delay),
+				this.lastPos[1] + (diff[1]  * this.settings.stabilizer.delay)
+			];
 
-			this.ctx.lineTo(...this.stabilizedPos);
-		} else {
-			this.ctx.lineTo(...this.currentPos);
+			this.lastPos = dest;
+		}
+		
+		this.ctx.lineTo(...dest);
+		this.ctx.stroke();
+	}
+
+	/*
+	 * Resizes the canvas to the elements dimensions.
+	 * if preserve is true, the existing content will
+	 * be redrawn at the new resolution. This produces
+	 * blurry edges etc. 
+	 */
+	resizeCanvas(preserve = true) {
+
+		let img;
+		if (preserve) {
+			img = this.canvasElement.toDataURL();
 		}
 
-		this.ctx.stroke();
+		this.canvasElement.height = this.canvasElement.offsetHeight;
+		this.canvasElement.width = this.canvasElement.offsetWidth;
+		if (preserve) {
+			this.drawImage(img);
+		}
+
+		//context settings are not preserved on resize.
+		this.applySettings();
+		
+		return this;
 	}
 }
